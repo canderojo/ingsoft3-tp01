@@ -1,0 +1,64 @@
+.buscar-form {
+  margin: var(--space-5) 0;
+  max-width: 480px;
+}
+
+.buscar-modo {
+  display: flex;
+  gap: var(--space-5);
+  margin-bottom: var(--space-4);
+  font-weight: 700;
+}
+
+.buscar-modo label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  cursor: pointer;
+}
+
+.buscar-input-row {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.buscar-input-row input {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-body);
+  font-size: 1rem;
+  padding: var(--space-3) var(--space-4);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.buscar-input-row input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.turnos-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.turno-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: inherit;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.turno-item:hover {
+  text-decoration: none;
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.turno-item-fecha {
+  font-weight: 700;
+  margin: 0 0 var(--space-1);
+  text-transform: capitalize;
+}

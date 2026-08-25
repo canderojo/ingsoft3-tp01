@@ -1,0 +1,67 @@
+.back-link {
+  display: inline-block;
+  margin-bottom: var(--space-4);
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+
+.profesional-detail-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.profesional-detail-header h1 {
+  margin: 0;
+}
+
+.profesional-detail-precio {
+  font-weight: 700;
+  color: var(--color-primary);
+  margin-bottom: var(--space-5);
+}
+
+.slots-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+}
+
+.slot-btn {
+  padding: var(--space-3);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.slot-btn:hover {
+  border-color: var(--color-primary);
+}
+
+.slot-btn.selected {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+}
+
+.slot-btn-ocupado {
+  background: #f1eaee;
+  border-color: #f1eaee;
+  color: var(--color-text-muted);
+  text-decoration: line-through;
+  cursor: not-allowed;
+}
+
+.slot-btn-ocupado:hover {
+  border-color: #f1eaee;
+}
+
+.reserva-form {
+  margin-top: var(--space-5);
+}

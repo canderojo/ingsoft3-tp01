@@ -14,3 +14,11 @@ build/
 Thumbs.db
 .vscode/
 .idea/
+
+# --- Go: artefactos de build específicos ---
+*.exe
+*.test
+*.out
+
+# --- Vite ---
+.vite/
