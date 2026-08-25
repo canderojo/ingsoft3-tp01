@@ -14,16 +14,6 @@ Proyecto para la materia **Ingeniería del Software 3** (UCC 2026). Cada trabajo
 - **Frontend**: React + Vite
 - **Base de datos**: PostgreSQL
 
-## Estructura del repo
-ingsoft3-tp01/
-├── backend/ # API en Go
-├── frontend/ # SPA en React + Vite
-├── docker-compose.yml # levanta todo compilando desde el código
-├── docker-compose.registry.yml # levanta todo con las imágenes ya publicadas
-├── .env.example
-├── decisiones.md
-├── evidencias.md
-└── README.md
 
 ## Cómo levantar el proyecto con Docker
 
@@ -33,7 +23,7 @@ ingsoft3-tp01/
 ```bash
    git clone https://github.com/canderojo/ingsoft3-tp01.git
    cd ingsoft3-tp01
-
+```
 2. Copiá la plantilla de variables de entorno y completá la contraseña de la base:
 ```bash
    cp .env.example .env
