@@ -1,0 +1,46 @@
+.turno-detail-card {
+  max-width: 480px;
+}
+
+.turno-detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.turno-detail-header h1 {
+  margin: 0;
+  font-size: 1.4rem;
+}
+
+.turno-detail-fecha {
+  text-transform: capitalize;
+  font-weight: 700;
+  color: var(--color-primary);
+  margin-bottom: var(--space-5);
+}
+
+.turno-detail-profesional {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-4);
+}
+
+.turno-detail-label {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.turno-detail-value {
+  margin: 0;
+  font-weight: 700;
+}
+
+.turno-detail-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-5);
+}

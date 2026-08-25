@@ -1,0 +1,68 @@
+:root {
+  /* Tipografía: serif con carácter para títulos, sans limpia para el
+     resto — inspirado en cómo lo resuelven sitios reales de salud, sin
+     copiar su contenido. */
+  --font-heading: "Fraunces", Georgia, serif;
+  --font-body: "Public Sans", "Segoe UI", sans-serif;
+
+  /* Paleta: rosa/magenta con saturación real (punto medio entre el tono
+     apagado corporativo y un magenta vivo), sobre un fondo crema cálido
+     en vez de blanco puro o gradiente pastel. */
+  --color-bg: #fdfaf7;
+  --color-surface: #ffffff;
+  --color-surface-alt: #f8ecf1;
+
+  --color-primary: #ac3673;
+  --color-primary-hover: #8a2b5c;
+  --color-primary-light: #f4dee9;
+
+  --color-secondary: #5c6f9b;
+  --color-secondary-light: #e6e9f3;
+
+  --color-accent: #ac3673;
+  --color-accent-light: #f4dee9;
+
+  --color-text: #33202d;
+  --color-text-muted: #806e78;
+  --color-border: #ecdde3;
+
+  /* Estados de turno */
+  --color-pendiente: #a56a1f;
+  --color-pendiente-bg: #f6ecd8;
+  --color-confirmado: #457357;
+  --color-confirmado-bg: #e3ede6;
+  --color-cancelado: #a13c50;
+  --color-cancelado-bg: #f5e1e6;
+  --color-completado: #4c5f8a;
+  --color-completado-bg: #e5e8f1;
+
+  /* Especialidades — el rosa de marca para dermatología, tonos afines
+     apagados para el resto (nunca arcoíris saturado) */
+  --color-dermatologia: #ac3673;
+  --color-nutricion: #4f7a5c;
+  --color-ecografia: #4c6e93;
+  --color-endocrinologia: #93702f;
+
+  /* Feedback */
+  --color-error: #a13c2e;
+  --color-error-bg: #f6e4e1;
+
+  /* Forma: punto medio — ni pastilla en todo, ni esquinas a rajatabla */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-pill: 999px;
+
+  --shadow-sm: 0 1px 3px rgba(60, 30, 45, 0.08);
+  --shadow-md: 0 6px 20px rgba(60, 30, 45, 0.12);
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+
+  --content-width: 1140px;
+}
