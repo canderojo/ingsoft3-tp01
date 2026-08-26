@@ -73,3 +73,31 @@ Utilicé inteligencia artificial (Claude) como herramienta de apoyo durante la r
 No utilicé la IA para reemplazar la ejecución del trabajo. Todos los comandos fueron ejecutados y verificados en mi propio entorno (builds, levantado de contenedores, pruebas de persistencia, publicación en ghcr.io). Practiqué primero el flujo completo sobre el sample de la cátedra (`demo-fullstack`) antes de aplicarlo a mi propia app, para entender cada paso antes de repetirlo.
 
 
+## TP3 — Planificación y trazabilidad (GitHub Projects)
+
+### Duración del sprint
+
+Elegí sprints de **1 semana**, porque la cátedra entrega un TP por semana. Cada sprint cierra
+alineado con cada entrega, lo que me permite tener siempre un objetivo claro y verificable al
+final de la semana, en vez de un ciclo desacoplado del calendario real de la materia.
+
+### Límite de trabajo en progreso (WIP)
+
+Elegí un límite de **2** para la columna "In Progress" (regla de arranque: personas + 1,
+trabajando sola = 2). Esto me permite tener una tarea activa y una segunda en caso de que la
+primera quede esperando algo (una revisión, una respuesta) sin perder el foco de avanzar. Si en
+la práctica nunca lo alcanzo, es señal de que quedó demasiado alto y debería bajarlo a 1.
+
+### Diagnóstico de la historia mal escrita
+
+La historia "Como desarrollador quiero crear la tabla usuarios" está mal escrita porque es una
+**tarea técnica disfrazada de historia de usuario**: nadie "quiere" una tabla, es un medio para lograr algo, no algo que alguien pueda notar o valorar. Le falta el "para qué..." que justifica por
+qué importa hacerla. La reescribiría como: "Como paciente quiero registrar mis datos para poder reservar un turno" y "crear la tabla usuarios" pasaría a ser una de las tareas técnicas dentro de esa historia.
+
+### Problemas encontrados y cómo los resolví
+
+No encontré problemas durante el desarrollo del TP.
+
+### Declaración de uso de IA
+
+Usé Claude como asistente durante todo el TP: para entender la teoría (jerarquía épica/historia/tarea, INVEST, criterios de aceptación, WIP limit, trazabilidad) antes de ejecutar cada paso; para guiarme comando a comando en la creación del proyecto, las labels, los issues, el board, el sprint y el PR de trazabilidad. Verifiqué cada paso ejecutándolo yo misma en mi cuenta de GitHub y revisando el resultado real en la web antes de avanzar al siguiente paso; y para la redacción de decisiones.md
