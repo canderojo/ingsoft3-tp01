@@ -74,3 +74,4 @@ docker compose down -v     # borra también el volumen de la base
 
 - [decisiones.md](./decisiones.md) — decisiones técnicas y de diseño, con justificaciones.
 - [evidencias.md](./evidencias.md) — capturas y evidencia de cada TP.
+
