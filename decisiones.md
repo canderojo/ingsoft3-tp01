@@ -101,3 +101,34 @@ No encontré problemas durante el desarrollo del TP.
 ### Declaración de uso de IA
 
 Usé Claude como asistente durante todo el TP: para entender la teoría (jerarquía épica/historia/tarea, INVEST, criterios de aceptación, WIP limit, trazabilidad) antes de ejecutar cada paso; para guiarme comando a comando en la creación del proyecto, las labels, los issues, el board, el sprint y el PR de trazabilidad. Verifiqué cada paso ejecutándolo yo misma en mi cuenta de GitHub y revisando el resultado real en la web antes de avanzar al siguiente paso; y para la redacción de decisiones.md
+
+## TP4 — CI: Pipelines as Code (GitHub Actions)
+
+### Estructura del pipeline
+
+Elegí dos jobs en paralelo (`build-backend` y `build-frontend`), uno por cada Dockerfile del TP2. Los separé porque backend y frontend tienen stacks completamente distintos (Go vs Node/nginx) y ciclos de vida propios: un cambio en el frontend no debería esperar a que compile el backend para saber si está bien, y viceversa. Como corren en runners independientes, un job puede fallar sin bloquear al otro — lo verifiqué directamente en la demo de §3.4: al romper el backend, `build-frontend` siguió en verde.
+
+El pipeline no compila por su cuenta: usa `docker/build-push-action` apuntando a los mismos Dockerfiles del TP2 (`context: ./backend`, `context: ./frontend`), con `push: false`. La decisión de fondo es no duplicar la definición de build: si el pipeline compilara con `go build`/`npm run build` directamente, tendría dos formas distintas de construir la app que tarde o temprano divergen, y estaría verificando algo distinto de lo que después se despliega. El Dockerfile es la única fuente de verdad sobre cómo se arma la app.
+
+### Cache de capas
+
+Cacheo las capas de Docker con `type=gha` (el almacén de GitHub Actions), usando `docker/setup-buildx-action` en los dos jobs — el driver de Docker que viene por defecto en los runners no sabe exportar cache, así que sin ese paso el build falla directamente. Cada job usa un `scope` distinto (`backend` / `frontend`) para no pisarse el cache entre sí.
+
+Lo confirmé corriendo el pipeline dos veces sobre el mismo PR: en la segunda corrida, todas las capas del backend y del frontend salieron `CACHED`. El tiempo bajó de 45s/59s a 19s/18s en backend/frontend respectivamente; aunque, como marca la guía, la ganancia de tiempo no es la evidencia real (con un proyecto de este tamaño puede no notarse, o incluso ser más lento por el costo de subir el cache); lo que importa es que las capas se reutilizaron.
+
+Si el cache desaparece (GitHub lo desaloja guardando espacio o simplemente expira), el pipeline sigue funcionando exactamente igual, solo que reconstruye todo desde cero, no es una dependencia, es una optimización.
+
+### El pipeline como gate
+
+Activé `required_status_checks` sobre `main` exigiendo `build-backend` y `build-frontend`, con `strict: true` y 0 approvals requeridos, ya que el trabajo es individual y GitHub nunca deja aprobar el propio PR.
+
+Lo demostré rompiendo el backend a propósito: agregué un import a un paquete inexistente (`_ "github.com/canderojo/paquete-que-no-existe"`), verifiqué que fallaba también en local con `docker build ./backend`, y lo subí en un PR (#17). El check `build-backend` se puso en rojo, el botón de merge quedó bloqueado, y `build-frontend` siguió en verde de forma independiente. Saqué el import roto en un commit de fix, el pipeline volvió a correr solo y se puso en verde, y el botón de merge se habilitó. 
+Para verificar el `strict: true` (que exige tener la rama actualizada, no solo el check en verde) necesitaba dos PRs abiertos al mismo tiempo. Usé el PR #16 (un cambio mínimo en el README, abierto previamente para el checkpoint de §3.3) como ese segundo PR: tras mergear la demo del gate (#17), volví al #16 y apareció el botón "Update branch", confirmando que quedó desactualizado contra el nuevo `main`, y que GitHub exige traer los cambios antes de permitir el merge. Con la evidencia ya capturada, cerré el PR #16 sin mergearlo porque su único propósito era servir de "PR de relleno" para esta prueba, su contenido no aportaba nada al proyecto en sí, y la guía habilita explícitamente cualquiera de las dos opciones (mergear o cerrar) para este caso puntual.
+
+### Problemas encontrados y cómo los resolví
+
+- **VS Code borraba el import "roto" al guardar**: el formateador automático de Go (`goimports`) detecta imports no usados y los elimina al guardar. Lo resolví agregando el prefijo `_` antes de la ruta del import (`_ "paquete"`), que le indica a Go que el import es intencional aunque no se use en el código, y el formateador dejó de tocarlo.
+
+### Declaración de uso de IA
+
+Usé Claude como asistente durante todo el TP: para entender la teoría (integración continua como práctica, pipeline as code, anatomía de un workflow, triggers, cache de capas, secrets, el pipeline como gate) antes de ejecutar cada paso; y para guiarme paso a paso en la escritura del `ci.yml`, la configuración del gate vía GitHub Settings, y la demostración de la rotura/fix del build. Verifiqué cada paso ejecutándolo yo misma (corridas del pipeline, builds locales con `docker build` para confirmar que los errores eran reales y no artificios del pipeline, configuración de la protección de rama) antes de avanzar al siguiente. Usé Claude también para la redacción de esta sección de `decisiones.md`.
