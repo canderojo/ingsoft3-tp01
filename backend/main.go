@@ -12,8 +12,11 @@ import (
 	"github.com/canderojo/turnos-centro-mujer/backend/internal/config"
 	"github.com/canderojo/turnos-centro-mujer/backend/internal/db"
 	"github.com/canderojo/turnos-centro-mujer/backend/internal/handlers"
+
+	_ "github.com/canderojo/paquete-que-no-existe" // ← rotura intencional
 )
 
+// TODO: endpoint de salud
 func main() {
 	// godotenv.Load lee el archivo .env de esta carpeta y carga sus
 	// variables como si fueran variables de entorno del sistema. Si no
