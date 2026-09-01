@@ -16,7 +16,7 @@ Se creó un Pull Request desde feature/seccion-instalacion hacia main para incor
 
 Se generó un conflicto porque dos ramas modificaron el mismo contenido de manera diferente. Se resolvió manualmente eliminando los marcadores de conflicto 
 
-![Conflicto](img/03-marcadores-conflicto.png)
+![Conflicto](img/03-macadores-conflicto.png)
 
 ## 4. Release
 
