@@ -4,18 +4,15 @@ import (
 	"database/sql"
 	"time"
 
-	"github.com/jmoiron/sqlx"
-
 	"github.com/canderojo/turnos-centro-mujer/backend/internal/models"
-	"github.com/canderojo/turnos-centro-mujer/backend/internal/repository"
 )
 
 // HorariosDisponibles calcula los huecos horarios libres de un
 // profesional en una fecha puntual: arma la grilla completa de
 // turnos posibles (horario de atención dividido en bloques de
 // duración fija) y le saca los que ya están ocupados.
-func HorariosDisponibles(db *sqlx.DB, profesionalID int, fecha time.Time) ([]time.Time, error) {
-	profesional, err := repository.ObtenerProfesional(db, profesionalID)
+func (s *Turnos) HorariosDisponibles(profesionalID int, fecha time.Time) ([]time.Time, error) {
+	profesional, err := s.repo.ObtenerProfesional(profesionalID)
 	if err == sql.ErrNoRows {
 		return nil, ErrProfesionalNoExiste
 	}
@@ -23,7 +20,7 @@ func HorariosDisponibles(db *sqlx.DB, profesionalID int, fecha time.Time) ([]tim
 		return nil, err
 	}
 
-	ocupados, err := repository.ListarTurnosDeProfesionalEnFecha(db, profesionalID, fecha)
+	ocupados, err := s.repo.ListarTurnosDeProfesionalEnFecha(profesionalID, fecha)
 	if err != nil {
 		return nil, err
 	}
@@ -33,7 +30,7 @@ func HorariosDisponibles(db *sqlx.DB, profesionalID int, fecha time.Time) ([]tim
 	finAtencion := combinarFechaYHora(fecha, profesional.HoraFinAtencion.Time)
 
 	disponibles := []time.Time{}
-	ahora := time.Now()
+	ahora := s.ahora()
 
 	for inicio := inicioAtencion; !inicio.Add(duracion).After(finAtencion); inicio = inicio.Add(duracion) {
 		fin := inicio.Add(duracion)
