@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -12,6 +13,8 @@ import (
 	"github.com/canderojo/turnos-centro-mujer/backend/internal/config"
 	"github.com/canderojo/turnos-centro-mujer/backend/internal/db"
 	"github.com/canderojo/turnos-centro-mujer/backend/internal/handlers"
+	"github.com/canderojo/turnos-centro-mujer/backend/internal/repository"
+	"github.com/canderojo/turnos-centro-mujer/backend/internal/service"
 )
 
 func main() {
@@ -48,12 +51,16 @@ func main() {
 	healthHandler := handlers.HealthHandler{DB: database}
 	router.Get("/health", healthHandler.Health)
 
-	profesionalesHandler := handlers.ProfesionalesHandler{DB: database}
+	// El servicio de turnos recibe la base (envuelta en repository.Postgres)
+	// y el reloj real. En los tests se reemplazan ambos por dobles.
+	turnosService := service.NuevoTurnos(repository.Postgres{DB: database}, time.Now)
+
+	profesionalesHandler := handlers.ProfesionalesHandler{DB: database, Servicio: turnosService}
 	router.Get("/profesionales", profesionalesHandler.Listar)
 	router.Get("/profesionales/{id}", profesionalesHandler.Obtener)
 	router.Get("/profesionales/{id}/horarios-disponibles", profesionalesHandler.HorariosDisponibles)
 
-	turnosHandler := handlers.TurnosHandler{DB: database}
+	turnosHandler := handlers.TurnosHandler{DB: database, Servicio: turnosService}
 	router.Post("/turnos", turnosHandler.Crear)
 	router.Get("/turnos", turnosHandler.ListarDePaciente)
 	router.Get("/turnos/{id}", turnosHandler.Obtener)

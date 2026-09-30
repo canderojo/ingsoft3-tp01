@@ -4,10 +4,7 @@ import (
 	"database/sql"
 	"time"
 
-	"github.com/jmoiron/sqlx"
-
 	"github.com/canderojo/turnos-centro-mujer/backend/internal/models"
-	"github.com/canderojo/turnos-centro-mujer/backend/internal/repository"
 )
 
 // CrearTurnoInput son los datos que necesitamos para reservar un
@@ -25,8 +22,8 @@ type CrearTurnoInput struct {
 // CrearTurno aplica las reglas de negocio de la reserva (horario de
 // atención, superposición, snapshot de precio) antes de delegar la
 // escritura a la capa de repository.
-func CrearTurno(db *sqlx.DB, input CrearTurnoInput) (*models.Turno, error) {
-	profesional, err := repository.ObtenerProfesional(db, input.ProfesionalID)
+func (s *Turnos) CrearTurno(input CrearTurnoInput) (*models.Turno, error) {
+	profesional, err := s.repo.ObtenerProfesional(input.ProfesionalID)
 	if err == sql.ErrNoRows {
 		return nil, ErrProfesionalNoExiste
 	}
@@ -34,7 +31,7 @@ func CrearTurno(db *sqlx.DB, input CrearTurnoInput) (*models.Turno, error) {
 		return nil, err
 	}
 
-	if input.FechaHoraInicio.Before(time.Now()) {
+	if input.FechaHoraInicio.Before(s.ahora()) {
 		return nil, ErrFechaEnElPasado
 	}
 
@@ -43,7 +40,7 @@ func CrearTurno(db *sqlx.DB, input CrearTurnoInput) (*models.Turno, error) {
 		return nil, ErrFueraDeHorario
 	}
 
-	superpuestoProfesional, err := repository.ExisteSuperposicionProfesional(db, input.ProfesionalID, input.FechaHoraInicio, fin)
+	superpuestoProfesional, err := s.repo.ExisteSuperposicionProfesional(input.ProfesionalID, input.FechaHoraInicio, fin)
 	if err != nil {
 		return nil, err
 	}
@@ -51,12 +48,12 @@ func CrearTurno(db *sqlx.DB, input CrearTurnoInput) (*models.Turno, error) {
 		return nil, ErrSuperposicionProfesional
 	}
 
-	paciente, err := repository.BuscarOCrearPaciente(db, input.Nombre, input.DNI, input.Email, input.Telefono)
+	paciente, err := s.repo.BuscarOCrearPaciente(input.Nombre, input.DNI, input.Email, input.Telefono)
 	if err != nil {
 		return nil, err
 	}
 
-	superpuestoPaciente, err := repository.ExisteSuperposicionPaciente(db, paciente.ID, input.FechaHoraInicio, fin)
+	superpuestoPaciente, err := s.repo.ExisteSuperposicionPaciente(paciente.ID, input.FechaHoraInicio, fin)
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +73,7 @@ func CrearTurno(db *sqlx.DB, input CrearTurnoInput) (*models.Turno, error) {
 		Precio: profesional.PrecioConsulta,
 	}
 
-	return repository.CrearTurno(db, turno)
+	return s.repo.CrearTurno(turno)
 }
 
 // dentroDeHorarioAtencion compara solo la hora del día (no la fecha)
@@ -97,26 +94,26 @@ func minutosDesdeMedianoche(t time.Time) int {
 // ObtenerTurno trae un turno aplicando la regla de auto-completado (ver
 // autoCompletarSiCorresponde): no hay login de profesional que marque
 // a mano que la consulta sucedió, así que lo inferimos por la fecha.
-func ObtenerTurno(db *sqlx.DB, id int) (*models.Turno, error) {
-	turno, err := repository.ObtenerTurno(db, id)
+func (s *Turnos) ObtenerTurno(id int) (*models.Turno, error) {
+	turno, err := s.repo.ObtenerTurno(id)
 	if err == sql.ErrNoRows {
 		return nil, ErrTurnoNoExiste
 	}
 	if err != nil {
 		return nil, err
 	}
-	return autoCompletarSiCorresponde(db, turno)
+	return s.autoCompletarSiCorresponde(turno)
 }
 
 // ListarTurnosDePaciente es como repository.ListarTurnosDePaciente,
 // pero aplicando la misma regla de auto-completado a cada turno.
-func ListarTurnosDePaciente(db *sqlx.DB, pacienteID int) ([]models.Turno, error) {
-	turnos, err := repository.ListarTurnosDePaciente(db, pacienteID)
+func (s *Turnos) ListarTurnosDePaciente(pacienteID int) ([]models.Turno, error) {
+	turnos, err := s.repo.ListarTurnosDePaciente(pacienteID)
 	if err != nil {
 		return nil, err
 	}
 	for i := range turnos {
-		actualizado, err := autoCompletarSiCorresponde(db, &turnos[i])
+		actualizado, err := s.autoCompletarSiCorresponde(&turnos[i])
 		if err != nil {
 			return nil, err
 		}
@@ -129,9 +126,9 @@ func ListarTurnosDePaciente(db *sqlx.DB, pacienteID int) ([]models.Turno, error)
 // hay login de profesional/staff que marque a mano que una consulta
 // sucedió, un turno "confirmado" cuyo horario ya pasó (y que no fue
 // cancelado) se considera completado automáticamente al leerlo.
-func autoCompletarSiCorresponde(db *sqlx.DB, turno *models.Turno) (*models.Turno, error) {
-	if turno.Estado == models.EstadoConfirmado && time.Now().After(turno.FechaHoraFin) {
-		return repository.ActualizarEstadoTurno(db, turno.ID, models.EstadoCompletado)
+func (s *Turnos) autoCompletarSiCorresponde(turno *models.Turno) (*models.Turno, error) {
+	if turno.Estado == models.EstadoConfirmado && s.ahora().After(turno.FechaHoraFin) {
+		return s.repo.ActualizarEstadoTurno(turno.ID, models.EstadoCompletado)
 	}
 	return turno, nil
 }
@@ -140,8 +137,8 @@ func autoCompletarSiCorresponde(db *sqlx.DB, turno *models.Turno) (*models.Turno
 // estados: solo se permiten las transiciones definidas en
 // models.TransicionesPermitidas (por ejemplo, no se puede pasar de
 // "pendiente" directo a "completado").
-func CambiarEstadoTurno(db *sqlx.DB, id int, nuevoEstado string) (*models.Turno, error) {
-	turno, err := repository.ObtenerTurno(db, id)
+func (s *Turnos) CambiarEstadoTurno(id int, nuevoEstado string) (*models.Turno, error) {
+	turno, err := s.repo.ObtenerTurno(id)
 	if err == sql.ErrNoRows {
 		return nil, ErrTurnoNoExiste
 	}
@@ -161,5 +158,5 @@ func CambiarEstadoTurno(db *sqlx.DB, id int, nuevoEstado string) (*models.Turno,
 		return nil, ErrTransicionInvalida
 	}
 
-	return repository.ActualizarEstadoTurno(db, id, nuevoEstado)
+	return s.repo.ActualizarEstadoTurno(id, nuevoEstado)
 }

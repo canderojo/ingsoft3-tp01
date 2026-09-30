@@ -17,7 +17,8 @@ import (
 
 // TurnosHandler agrupa los endpoints de reserva y consulta de turnos.
 type TurnosHandler struct {
-	DB *sqlx.DB
+	DB       *sqlx.DB
+	Servicio *service.Turnos
 }
 
 // crearTurnoRequest es el body esperado de POST /turnos. El paciente
@@ -50,7 +51,7 @@ func (h *TurnosHandler) Crear(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	turno, err := service.CrearTurno(h.DB, service.CrearTurnoInput{
+	turno, err := h.Servicio.CrearTurno(service.CrearTurnoInput{
 		ProfesionalID:   body.ProfesionalID,
 		FechaHoraInicio: inicio,
 		Nombre:          body.Nombre,
@@ -74,7 +75,7 @@ func (h *TurnosHandler) Obtener(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	turno, err := service.ObtenerTurno(h.DB, id)
+	turno, err := h.Servicio.ObtenerTurno(id)
 	if err != nil {
 		responderErrorDeNegocio(w, err)
 		return
@@ -104,7 +105,7 @@ func (h *TurnosHandler) ListarDePaciente(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	turnos, err := service.ListarTurnosDePaciente(h.DB, paciente.ID)
+	turnos, err := h.Servicio.ListarTurnosDePaciente(paciente.ID)
 	if err != nil {
 		responderError(w, http.StatusInternalServerError, "no se pudieron listar los turnos")
 		return
@@ -134,7 +135,7 @@ func (h *TurnosHandler) CambiarEstado(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	turno, err := service.CambiarEstadoTurno(h.DB, id, body.Estado)
+	turno, err := h.Servicio.CambiarEstadoTurno(id, body.Estado)
 	if err != nil {
 		responderErrorDeNegocio(w, err)
 		return

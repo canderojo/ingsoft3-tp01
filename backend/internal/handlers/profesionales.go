@@ -17,7 +17,8 @@ import (
 // profesionales (no hay alta/baja/modificación por API: se cargan a
 // mano en la base, ver db/init.sql).
 type ProfesionalesHandler struct {
-	DB *sqlx.DB
+	DB       *sqlx.DB
+	Servicio *service.Turnos
 }
 
 // Listar responde GET /profesionales (opcionalmente ?especialidad=...).
@@ -79,7 +80,7 @@ func (h *ProfesionalesHandler) HorariosDisponibles(w http.ResponseWriter, r *htt
 		return
 	}
 
-	horarios, err := service.HorariosDisponibles(h.DB, id, fecha)
+	horarios, err := h.Servicio.HorariosDisponibles(id, fecha)
 	if err != nil {
 		responderErrorDeNegocio(w, err)
 		return
