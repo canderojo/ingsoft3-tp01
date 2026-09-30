@@ -3,7 +3,6 @@ package main
 import (
 	"log"
 	"net/http"
-	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -52,8 +51,8 @@ func main() {
 	router.Get("/health", healthHandler.Health)
 
 	// El servicio de turnos recibe la base (envuelta en repository.Postgres)
-	// y el reloj real. En los tests se reemplazan ambos por dobles.
-	turnosService := service.NuevoTurnos(repository.Postgres{DB: database}, time.Now)
+	// y el reloj de Argentina. En los tests se reemplazan ambos por dobles.
+	turnosService := service.NuevoTurnos(repository.Postgres{DB: database}, service.AhoraEnArgentina)
 
 	profesionalesHandler := handlers.ProfesionalesHandler{DB: database, Servicio: turnosService}
 	router.Get("/profesionales", profesionalesHandler.Listar)

@@ -153,6 +153,8 @@ func responderErrorDeNegocio(w http.ResponseWriter, err error) {
 		responderError(w, http.StatusNotFound, err.Error())
 	case errors.Is(err, service.ErrFueraDeHorario),
 		errors.Is(err, service.ErrFechaEnElPasado),
+		errors.Is(err, service.ErrAnticipacionInsuficiente),
+		errors.Is(err, service.ErrCancelarTurnoPasado),
 		errors.Is(err, service.ErrTransicionInvalida):
 		responderError(w, http.StatusUnprocessableEntity, err.Error())
 	case errors.Is(err, service.ErrSuperposicionProfesional),

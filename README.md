@@ -163,9 +163,10 @@ Estas reglas viven en el **código Go del backend**, decisión intencional para 
 | RN2 | No se pueden crear turnos fuera del horario de atención | Validación |
 | RN3 | No se pueden solapar turnos para el mismo profesional | Restricción |
 | RN4 | No se pueden solapar turnos del mismo paciente entre distintos profesionales | Restricción |
-| RN5 | No se puede cancelar un turno pasado o ya completado | Restricción |
-| RN6 | Transición de estado: `pendiente → confirmado` o `pendiente → cancelado` únicamente (nunca directo a `completado`) | Transición de estado |
+| RN5 | No se puede cancelar un turno que ya empezó o que ya está completado | Restricción |
+| RN6 | Transiciones manuales: `pendiente → confirmado`, `pendiente → cancelado` y `confirmado → cancelado`. Un turno pasa a `completado` sólo automáticamente, cuando estaba confirmado y su horario ya terminó | Transición de estado |
 | RN7 | El precio del turno se copia de la tarifa del profesional al momento de la reserva (snapshot inmutable) | Cálculo |
+| RN8 | Un turno se puede reservar hasta 10 minutos antes de su hora de inicio | Restricción |
 
 ---
 

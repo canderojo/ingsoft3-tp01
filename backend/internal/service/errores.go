@@ -14,6 +14,8 @@ var (
 	ErrProfesionalNoExiste      = errors.New("el profesional no existe")
 	ErrFueraDeHorario           = errors.New("el turno está fuera del horario de atención del profesional")
 	ErrFechaEnElPasado          = errors.New("no se puede reservar un turno en el pasado")
+	ErrAnticipacionInsuficiente = errors.New("el turno se tiene que reservar con al menos 10 minutos de anticipación")
+	ErrCancelarTurnoPasado      = errors.New("no se puede cancelar un turno que ya empezó")
 	ErrSuperposicionProfesional = errors.New("el profesional ya tiene un turno en ese horario")
 	ErrSuperposicionPaciente    = errors.New("el paciente ya tiene un turno en ese horario")
 	ErrTurnoNoExiste            = errors.New("el turno no existe")
