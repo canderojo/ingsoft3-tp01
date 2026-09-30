@@ -9,7 +9,10 @@ import (
 
 // ---- Regla: horarios disponibles = grilla del día menos los ocupados ----
 
+// Stub: el doble le da el profesional y el turno ya ocupado del día; el
+// test revisa la lista de horarios que devolvió el servicio.
 func TestHorariosDisponibles_SacaLosTurnosOcupados(t *testing.T) {
+	// Arrange: un profesional de 9 a 13 con el turno de las 10:00 ocupado.
 	repo := &repoDoble{
 		profesional: profesionalDeManana(), // de 9 a 13, cada 30 min: 8 huecos
 		turnosDelDia: []models.Turno{
@@ -19,8 +22,11 @@ func TestHorariosDisponibles_SacaLosTurnosOcupados(t *testing.T) {
 	servicio := NuevoTurnos(repo, relojFijo)
 	dia := time.Date(2026, 10, 16, 0, 0, 0, 0, time.UTC)
 
+	// Act: se piden los horarios disponibles de ese día.
 	disponibles, err := servicio.HorariosDisponibles(1, dia)
 
+	// Assert: quedan 7 horarios y ninguno es el de las 10:00.
+	// t.Fatalf: si hubo error, la lista no sirve y no tiene sentido revisarla.
 	if err != nil {
 		t.Fatalf("no se esperaba error y dio: %v", err)
 	}
@@ -36,7 +42,11 @@ func TestHorariosDisponibles_SacaLosTurnosOcupados(t *testing.T) {
 
 // ---- Regla: un horario deja de ofrecerse 10 minutos antes de empezar ----
 
+// Stub: el doble le da el profesional. Es un test parametrizado que prueba
+// el borde de los 10 minutos desde el lado de los horarios ofrecidos: a
+// las 10:50 todavía se ofrece el de las 11:00, y a las 10:51 ya no.
 func TestHorariosDisponibles_AnticipacionMinima(t *testing.T) {
+	// Arrange: el día a consultar y la tabla con los dos "ahora" del borde.
 	dia := time.Date(2026, 10, 16, 0, 0, 0, 0, time.UTC)
 
 	casos := []struct {
@@ -50,11 +60,16 @@ func TestHorariosDisponibles_AnticipacionMinima(t *testing.T) {
 
 	for _, c := range casos {
 		t.Run(c.nombre, func(t *testing.T) {
+			// Arrange (de este caso): el doble con el profesional y el
+			// servicio con el reloj en la hora del caso.
 			repo := &repoDoble{profesional: profesionalDeManana()}
 			servicio := NuevoTurnos(repo, relojEn(c.ahora))
 
+			// Act: se piden los horarios disponibles del día.
 			disponibles, err := servicio.HorariosDisponibles(1, dia)
 
+			// Assert: el primer horario ofrecido es el esperado.
+			// t.Fatalf: si hubo error, la lista no sirve y no tiene sentido revisarla.
 			if err != nil {
 				t.Fatalf("no se esperaba error y dio: %v", err)
 			}
