@@ -24,9 +24,15 @@ const (
 )
 
 // TransicionesPermitidas mapea cada estado a la lista de estados a
-// los que puede pasar. Es un "mapa" (map[string][]string): la
-// estructura de datos de Go para diccionarios clave→valor.
+// los que se puede pasar A MANO (por PATCH /turnos/{id}/estado). Es un
+// "mapa" (map[string][]string): la estructura de datos de Go para
+// diccionarios clave→valor.
+//
+// "completado" no figura como destino: no hay login del centro médico
+// que marque una consulta como hecha, así que un turno sólo llega a
+// completado por el auto-completado (service.autoCompletarSiCorresponde),
+// nunca porque alguien lo pida.
 var TransicionesPermitidas = map[string][]string{
 	EstadoPendiente:  {EstadoConfirmado, EstadoCancelado},
-	EstadoConfirmado: {EstadoCompletado, EstadoCancelado},
+	EstadoConfirmado: {EstadoCancelado},
 }

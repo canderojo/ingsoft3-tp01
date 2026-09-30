@@ -31,8 +31,12 @@ func (s *Turnos) CrearTurno(input CrearTurnoInput) (*models.Turno, error) {
 		return nil, err
 	}
 
-	if input.FechaHoraInicio.Before(s.ahora()) {
+	ahora := s.ahora()
+	if input.FechaHoraInicio.Before(ahora) {
 		return nil, ErrFechaEnElPasado
+	}
+	if input.FechaHoraInicio.Before(ahora.Add(AnticipacionMinima)) {
+		return nil, ErrAnticipacionInsuficiente
 	}
 
 	fin := input.FechaHoraInicio.Add(time.Duration(profesional.DuracionTurnoMinutos) * time.Minute)
@@ -156,6 +160,12 @@ func (s *Turnos) CambiarEstadoTurno(id int, nuevoEstado string) (*models.Turno, 
 	}
 	if !esValida {
 		return nil, ErrTransicionInvalida
+	}
+
+	// Regla de negocio 5: un turno que ya empezó (o ya pasó) no se puede
+	// cancelar.
+	if nuevoEstado == models.EstadoCancelado && !turno.FechaHoraInicio.After(s.ahora()) {
+		return nil, ErrCancelarTurnoPasado
 	}
 
 	return s.repo.ActualizarEstadoTurno(id, nuevoEstado)

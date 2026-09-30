@@ -9,9 +9,8 @@ import EspecialidadBadge from "../components/EspecialidadBadge";
 import CheckIcon from "../components/icons/CheckIcon";
 import "./TurnoDetailPage.css";
 
-// "completado" es una transición real del turno (TRANSICIONES_PERMITIDAS),
-// pero es el centro médico quien marca una consulta como completada, no
-// el propio paciente — por eso no se ofrece como botón acá.
+// "completado" no es una acción de la paciente: el backend marca el turno
+// como completado solo, cuando un turno confirmado ya terminó.
 const ACCION_POR_ESTADO = {
   confirmado: { texto: "Confirmar turno", clase: "btn-primary" },
   cancelado: { texto: "Cancelar turno", clase: "btn-danger" },

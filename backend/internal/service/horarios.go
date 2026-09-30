@@ -35,7 +35,9 @@ func (s *Turnos) HorariosDisponibles(profesionalID int, fecha time.Time) ([]time
 	for inicio := inicioAtencion; !inicio.Add(duracion).After(finAtencion); inicio = inicio.Add(duracion) {
 		fin := inicio.Add(duracion)
 
-		if inicio.Before(ahora) {
+		// Un horario deja de ofrecerse 10 minutos antes de empezar
+		// (y, con más razón, si ya pasó).
+		if inicio.Before(ahora.Add(AnticipacionMinima)) {
 			continue
 		}
 		if seSuperponeConAlguno(inicio, fin, ocupados) {

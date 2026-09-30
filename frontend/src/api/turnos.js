@@ -17,9 +17,11 @@ export const ESTADOS = {
 
 // Transiciones permitidas, replicadas del backend (models.Turno.TransicionesPermitidas)
 // para poder decidir qué acciones mostrar sin ida y vuelta al servidor.
+// "completado" no es un destino manual: el backend lo asigna solo cuando
+// un turno confirmado ya terminó.
 export const TRANSICIONES_PERMITIDAS = {
   pendiente: ["confirmado", "cancelado"],
-  confirmado: ["completado", "cancelado"],
+  confirmado: ["cancelado"],
   cancelado: [],
   completado: [],
 };

@@ -166,7 +166,7 @@ export default function ProfesionalDetailPage() {
                 key={iso}
                 type="button"
                 disabled={!disponible}
-                title={disponible ? undefined : "Ya reservado"}
+                title={disponible ? undefined : "No disponible"}
                 className={`slot-btn${slotSeleccionado === iso ? " selected" : ""}${
                   disponible ? "" : " slot-btn-ocupado"
                 }`}
