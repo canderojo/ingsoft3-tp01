@@ -19,6 +19,7 @@ type repoDoble struct {
 	profesional        *models.Profesional
 	turno              *models.Turno
 	turnosDelDia       []models.Turno
+	turnosDelPaciente  []models.Turno
 	ocupadoProfesional bool
 	ocupadoPaciente    bool
 
@@ -72,7 +73,7 @@ func (r *repoDoble) ActualizarEstadoTurno(id int, nuevoEstado string) (*models.T
 }
 
 func (r *repoDoble) ListarTurnosDePaciente(pacienteID int) ([]models.Turno, error) {
-	return nil, nil
+	return r.turnosDelPaciente, nil
 }
 
 // ---- Datos de prueba compartidos ----
