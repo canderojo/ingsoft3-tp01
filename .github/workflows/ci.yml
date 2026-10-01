@@ -30,6 +30,50 @@ jobs:
           cache-from: type=gha,scope=backend
           cache-to: type=gha,mode=max,scope=backend
 
+      - name: Construir la etapa de tests
+        uses: docker/build-push-action@v7
+        with:
+          context: ./backend
+          target: test          # se detiene en la etapa de tests, no llega a final
+          load: true            # deja la imagen en el Docker local, para poder correrla
+          push: false
+          tags: backend-test:ci
+          cache-from: type=gha,scope=backend-test
+          cache-to: type=gha,mode=max,scope=backend-test
+
+      - name: Correr los tests con cobertura
+        run: |
+          mkdir -p TestResults
+          docker run --rm -v "${{ github.workspace }}/TestResults:/out" backend-test:ci \
+            -coverprofile=/out/coverage.out
+
+      - name: Reporte de cobertura
+        if: ${{ !cancelled() }}   # también cuando los tests fallaron
+        run: |
+          docker run --rm -v "${{ github.workspace }}/TestResults:/out" --entrypoint go backend-test:ci \
+            tool cover -func=/out/coverage.out > TestResults/cobertura.txt
+          docker run --rm -v "${{ github.workspace }}/TestResults:/out" --entrypoint go backend-test:ci \
+            tool cover -html=/out/coverage.out -o /out/coverage.html
+          {
+            echo "## Cobertura del backend (internal/service)"
+            echo ""
+            echo "Total: **$(tail -n 1 TestResults/cobertura.txt | awk '{print $NF}')** de sentencias (Go no mide cobertura de rama)."
+            echo ""
+            echo '```'
+            cat TestResults/cobertura.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Publicar el reporte de cobertura
+        uses: actions/upload-artifact@v6
+        if: ${{ !cancelled() }}
+        with:
+          name: coverage-report-backend
+          path: |
+            TestResults/coverage.html
+            TestResults/coverage.out
+            TestResults/cobertura.txt
+
   build-frontend:
     runs-on: ubuntu-latest
     steps:
