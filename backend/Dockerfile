@@ -8,7 +8,11 @@ RUN go mod download
 COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -o /app/server .
 
-# ---- Etapa 2: runtime (imagen mínima, sin compilador) ----
+# ---- Etapa 2: tests (parte del build, con el compilador de Go adentro) ----
+FROM build AS test
+ENTRYPOINT ["go", "test", "-v", "./internal/service/..."]
+
+# ---- Etapa 3: runtime (imagen mínima, sin compilador) ----
 FROM alpine:3.20 AS final
 WORKDIR /app
 COPY --from=build /app/server .
