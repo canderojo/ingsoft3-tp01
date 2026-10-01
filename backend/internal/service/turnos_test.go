@@ -327,3 +327,26 @@ func TestCambiarEstadoTurno_CancelarUnTurnoQueYaEmpezo_EsRechazado(t *testing.T)
 		t.Errorf("no se tenía que tocar la base, y se pidieron %v", repo.cambiosDeEstado)
 	}
 }
+
+// ---- Camino sin cubrir: pedir un turno que no existe ----
+
+// Stub: el doble no tiene turno cargado, así que contesta sql.ErrNoRows
+// como Postgres cuando no encuentra la fila. Es el test del ejercicio del
+// camino sin cubrir: sin él, el return de ErrTurnoNoExiste de ObtenerTurno
+// no lo recorría ningún test.
+func TestObtenerTurno_QueNoExiste_DevuelveErrTurnoNoExiste(t *testing.T) {
+	// Arrange: un doble vacío y el servicio.
+	repo := &repoDoble{} // sin turno cargado: el doble contesta sql.ErrNoRows
+	servicio := NuevoTurnos(repo, relojFijo)
+
+	// Act: se pide un turno que no existe.
+	turno, err := servicio.ObtenerTurno(99)
+
+	// Assert: vuelve ErrTurnoNoExiste y ningún turno.
+	if !errors.Is(err, ErrTurnoNoExiste) {
+		t.Errorf("se esperaba ErrTurnoNoExiste y dio: %v", err)
+	}
+	if turno != nil {
+		t.Errorf("no se esperaba ningún turno y vino: %+v", turno)
+	}
+}
