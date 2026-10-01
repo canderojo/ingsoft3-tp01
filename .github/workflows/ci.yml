@@ -44,8 +44,7 @@ jobs:
       - name: Correr los tests con cobertura
         run: |
           mkdir -p TestResults
-          docker run --rm -v "${{ github.workspace }}/TestResults:/out" backend-test:ci \
-            -coverprofile=/out/coverage.out
+          docker run --rm -v "${{ github.workspace }}/TestResults:/out" backend-test:ci
 
       - name: Reporte de cobertura
         if: ${{ !cancelled() }}   # también cuando los tests fallaron
