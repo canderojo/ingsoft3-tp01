@@ -7,7 +7,11 @@ import (
 
 // ---- Reloj de la app: hora de reloj de Argentina, etiquetada como UTC ----
 
+// Sin doble: horaDeRelojArgentina es una función pura. Es un test
+// parametrizado. El segundo caso prueba el cambio de día: la 1:00 UTC del
+// 1/10 todavía es el 30/9 en Argentina.
 func TestHoraDeRelojArgentina(t *testing.T) {
+	// Arrange: la tabla de instantes UTC y su hora de reloj en Argentina.
 	casos := []struct {
 		nombre   string
 		instante time.Time
@@ -23,8 +27,10 @@ func TestHoraDeRelojArgentina(t *testing.T) {
 
 	for _, c := range casos {
 		t.Run(c.nombre, func(t *testing.T) {
+			// Act: se pasa el instante a hora de reloj de Argentina.
 			resultado := horaDeRelojArgentina(c.instante)
 
+			// Assert: da la hora (y el día) esperados.
 			if !resultado.Equal(c.esperado) {
 				t.Errorf("se esperaba %s y dio %s", c.esperado, resultado)
 			}
