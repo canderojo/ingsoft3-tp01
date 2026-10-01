@@ -11,4 +11,12 @@ export default defineConfig({
       '/health': 'http://localhost:8080',
     },
   },
+  test: {
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'html', 'lcov', 'json-summary'],
+      include: ['src/utils/**', 'src/api/client.js'],
+      exclude: ['**/*.test.js'],
+    },
+  },
 })

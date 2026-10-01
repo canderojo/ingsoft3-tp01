@@ -23,3 +23,4 @@ Thumbs.db
 # --- Vite ---
 .vite/
 backend/coverage.html
+frontend/coverage/
