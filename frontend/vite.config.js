@@ -17,6 +17,7 @@ export default defineConfig({
       reporter: ['text', 'html', 'lcov', 'json-summary'],
       include: ['src/utils/**', 'src/api/client.js'],
       exclude: ['**/*.test.js'],
+      thresholds: { lines: 80, branches: 75 },
     },
   },
 })
