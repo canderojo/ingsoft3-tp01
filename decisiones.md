@@ -132,3 +132,165 @@ Para verificar el `strict: true` (que exige tener la rama actualizada, no solo e
 ### Declaración de uso de IA
 
 Usé Claude como asistente durante todo el TP: para entender la teoría (integración continua como práctica, pipeline as code, anatomía de un workflow, triggers, cache de capas, secrets, el pipeline como gate) antes de ejecutar cada paso; y para guiarme paso a paso en la escritura del `ci.yml`, la configuración del gate vía GitHub Settings, y la demostración de la rotura/fix del build. Verifiqué cada paso ejecutándolo yo misma (corridas del pipeline, builds locales con `docker build` para confirmar que los errores eran reales y no artificios del pipeline, configuración de la protección de rama) antes de avanzar al siguiente. Usé Claude también para la redacción de esta sección de `decisiones.md`.
+
+## TP5 — Testing y calidad
+
+### Qué lógica elegí testear y por qué
+
+Testeé la capa `internal/service` del backend, que es donde están todas las reglas de negocio del turnero:
+
+- No reservar en el pasado ni con menos de 10 minutos de anticipación.
+- Que el turno entre en el horario de atención del profesional.
+- Que no se superponga con otro turno del profesional ni con otro de la paciente.
+- La máquina de estados (qué cambios de estado se permiten).
+- El auto-completado de los turnos confirmados que ya pasaron.
+- El snapshot del precio al momento de reservar.
+- Los horarios disponibles de cada profesional.
+
+Es donde más duele un bug: un error ahí le da a una paciente un turno que no existe, pisa el turno de otra o le cobra un precio que no corresponde.
+
+En el frontend testeé la lógica pura que tiene:
+
+- `src/utils/format.js`: cómo se muestran las horas, los precios y las fechas, incluida la regla de no correr la hora 3 horas.
+- `src/api/client.js`: cómo convierte los errores del backend en el mensaje que ve la paciente.
+- `src/utils/resumen.js`: el texto de resumen de los turnos de la paciente, que agregué en el PR #29.
+
+Al escribir los tests encontré que el código no cumplía dos reglas que yo misma había escrito en el README: RN5 decía que no se podía cancelar un turno pasado, pero no estaba implementado, y RN6 decía que un turno nunca pasaba a `completado` a mano, pero el backend lo permitía por la API. Las corregí, agregué la regla RN8 (anticipación mínima de 10 minutos) y actualicé el README. Es justo lo que plantea la guía: un test protege la regla tal como está en el código, y sólo yo sabía lo que se quería.
+
+PRs: el refactor en [#22](https://github.com/canderojo/ingsoft3-tp01/pull/22), la suite del backend con estas correcciones en [#23](https://github.com/canderojo/ingsoft3-tp01/pull/23) y la del frontend en [#26](https://github.com/canderojo/ingsoft3-tp01/pull/26).
+
+### El refactor para poder mockear
+
+Antes del TP5, las funciones de `service` recibían `*sqlx.DB` y llamaban directo a las funciones de `repository`, y además usaban `time.Now()` adentro. No había forma de testearlas sin un Postgres levantado, y cualquier test que dependiera de la fecha iba a dar distinto según el día en que se corriera.
+
+El refactor hizo que esas dos dependencias entren desde afuera: `service` ahora define una interfaz `Repositorio` con los 9 métodos que necesita, y `service.Turnos` se arma con `NuevoTurnos(repo, ahora)`. En la app real, `main.go` le pasa `repository.Postgres` (que sólo envuelve las funciones que ya existían) y el reloj; en los tests, un doble y una hora fija. Las reglas no cambiaron, sólo de dónde vienen la base y la hora. El paquete `service` ya ni siquiera importa a `repository`.
+
+### Herramientas que usé (mi stack no es el de la cátedra)
+
+| Qué hace falta | Backend (Go) | Frontend (React + Vite) |
+|---|---|---|
+| Test parametrizado | Tabla de casos con `t.Run` | `it.each` |
+| El doble (mock/stub) | `repoDoble`, escrito a mano | `vi.fn()` + `vi.stubGlobal("fetch", …)` |
+| Medir la cobertura | `go test -coverprofile` + `go tool cover` | `@vitest/coverage-v8` |
+| Umbral que frena el build | Script `scripts/test-con-umbral.sh` | `thresholds` en `vite.config.js` |
+| Qué entra en la cuenta | Sólo el paquete `./internal/service/...` | `include: ['src/utils/**', 'src/api/client.js']` |
+
+En el backend, el doble (`repoDoble`) es una base de datos de mentira que escribí a mano: un struct que implementa la interfaz `Repositorio`. En Go es lo más común hacerlo así, y no hace falta instalar ninguna librería. Hace dos cosas:
+
+- **Responde lo que el test le pide** (stub). Por ejemplo, "este profesional atiende de 9 a 13".
+- **Anota lo que el servicio le pide a la base** (mock): qué turnos se intentaron guardar y qué cambios de estado se pidieron. Así el test puede revisar después qué hizo el servicio.
+
+En el frontend, el mock está en el primer test de `client.test.js`. Ahí se reemplaza `fetch` (la función que le habla al backend) por una de mentira. El test revisa dos cosas: que el error del backend llegue bien a la pantalla, y que `fetch` se haya llamado una sola vez, con `POST`, a una dirección que termina en `/turnos`.
+
+El umbral del backend va en un script (`scripts/test-con-umbral.sh`) porque Go no trae una opción para eso, como sí la tienen vitest o coverlet. El script corre los tests, lee el porcentaje total y, si queda abajo del umbral, hace fallar el build.
+
+
+### Qué dejé afuera de la cuenta de cobertura
+
+**Backend.** En Go no se puede excluir archivo por archivo como en .NET: lo que se elige es qué paquetes se miden. Elegí medir sólo `./internal/service/...`, porque ahí están todas las reglas de negocio. Esto tiene una ventaja: cualquier archivo nuevo que se agregue a `service` entra solo en la cuenta, sin tocar ninguna configuración. La desventaja es que si algún día creo un paquete nuevo con reglas, no se va a medir hasta que lo agregue a mano al comando.
+Medí la cobertura de todo el backend con `go test ./... -coverprofile` y me dio 20,4 %. Es bajo porque cuenta paquetes que no tienen tests ni reglas de negocio, así que el umbral lo aplico sólo sobre `internal/service`. Dejé afuera:
+
+- `main.go`, `internal/config` e `internal/db`: son el arranque. Leen las variables de entorno, abren la conexión a Postgres y conectan las piezas. No tienen reglas, y si algo ahí está mal la app no levanta.
+- `internal/models`: son structs de datos. Las únicas funciones (`Scan`, `Value` y `MarshalJSON` de `HoraDelDia`) sólo traducen la hora entre Postgres y JSON.
+- `internal/repository`: son las consultas SQL. Para probarlas de verdad hace falta un Postgres real, y eso ya es un test de integración (TP7)
+- `internal/handlers`: reciben los pedidos que llegan desde el frontend, se los pasan al servicio y devuelven la respuesta. Los dejé afuera de la cuenta porque el umbral lo puse para controlar que las **reglas de negocio** estén testeadas, y los handlers no tienen reglas: sólo traducen entre HTTP y el servicio.
+Un error en un handler y uno en el service no son igual de peligrosos. Si un handler falla, el pedido no funciona y se nota enseguida: la pantalla muestra un error. Si falla una regla del service, la app sigue funcionando, pero hace algo mal sin que nadie se dé cuenta, como dar un turno superpuesto o cobrar un precio equivocado. Por eso el esfuerzo de testear lo puse en el service.
+Además, lo que hacen los handlers se prueba mejor con la app completa y una base de datos real, que es lo que se hace en el TP7. Si los contara ahora, sin tests, el porcentaje bajaría tanto que tendría que poner un umbral muy bajo, y dejaría de servir para controlar las reglas.
+Igual no están vacíos: revisan que lleguen todos los datos y que la fecha tenga el formato correcto. Por eso lo dejo anotado como pendiente: para sumarlos habría que testearlos con `httptest`.
+
+**Frontend.** Medí sólo `src/utils/**` y `src/api/client.js`, que es donde está la lógica. Dejé afuera:
+
+- **Las páginas y los componentes:** muestran datos y reaccionan a clics. Se prueban mejor con la app completa en el navegador, que es lo que se hace en el TP7.
+- **`mockData.js`:** son datos inventados para la demo, no hay nada que probar.
+- **`api/turnos.js` y `api/profesionales.js`:** sólo arman la dirección del pedido y llaman a `client.js`, que sí está testeado.
+
+### Umbral de cobertura
+
+**Backend: 70 % de sentencias.**
+
+Antes del PR #29, el pipeline medía el servicio en 78,6 % (77 de 98 sentencias cubiertas). El umbral lo elegí pensando en cuánto código sin tests tiene que entrar para que el build se frene:
+
+| Umbral | Se frena cuando entran… | Problema |
+|---|---|---|
+| 80 % | 3 sentencias sin tests | Ya falla hoy casi sin margen: cualquier cambio lo rompe |
+| 75 % | 5 sentencias sin tests | Un solo `if` con dos líneas lo rompe |
+| **70 %** | **13 sentencias sin tests** | Frena una función mediana sin tests, pero deja hacer cambios chicos |
+
+Me quedé con 70 % porque cumple lo que quiero del umbral: que no se pueda agregar una funcionalidad nueva sin tests, pero sin que el build falle por cualquier detalle. Un umbral que falla todo el tiempo termina desactivándose. Primero había elegido 75 %, pero lo había calculado con los números de mi máquina; cuando vi los del pipeline, me di cuenta de que dejaba muy poco margen y lo bajé.
+
+Para subirlo habría que testear los handlers. Después del PR #29 el servicio mide 87,3 %.
+
+La métrica es de sentencias porque es la única que mide Go: no tiene cobertura de rama, así que en el backend no hay número de rama para reportar. Para compensarlo, al escribir los tests pensé los dos caminos de cada `if` importante.
+
+**Frontend: 80 % de líneas y 75 % de ramas.**
+
+Antes del PR #29 medía 96,4 % de líneas (27 de 28) y 90,9 % de ramas (10 de 11). Con estos umbrales, el build se frena si entran **6 líneas** o **3 caminos de `if`** sin tests. Si los subía a 90 % y 85 %, una sola función nueva de dos líneas ya lo rompía.
+
+Uso dos números porque en el frontend sí se mide la cobertura de rama, y es la más honesta: dice si se probaron los dos lados de cada `if`, no sólo si se ejecutó la línea. El de ramas es más bajo porque son pocas y cada una mueve mucho el porcentaje.
+
+Después del PR #29 mide 97,4 % de líneas y 96 % de ramas.
+
+La corrida con el resumen de cobertura de los dos lados y los reportes para descargar: [corrida 36939280662](https://github.com/canderojo/ingsoft3-tp01/actions/runs/36939280662).
+
+### Por qué cobertura alta no garantiza calidad
+
+La cobertura mide qué código se ejecutó, no qué se comprobó. Un test que llame a `dentroDeHorarioAtencion(inicio, fin, profesional)` y no revise el resultado suma cobertura, pero no detecta nada: si la función dijera que un turno de las 3 de la mañana entra en horario, el test seguiría en verde.
+
+### Ejercicio del camino sin cubrir
+
+En el reporte HTML (`go tool cover -html`) quedó en rojo esta parte de `ObtenerTurno`:
+
+```go
+if err == sql.ErrNoRows {
+    return nil, ErrTurnoNoExiste
+}
+```
+`ObtenerTurno` busca un turno por su número. Este `if` es el camino de cuando el turno **no existe**. Los tests que había sólo probaban turnos que sí existían, porque siempre le cargaban un turno al doble. El otro camino, el del turno inexistente, no lo probaba nadie.
+
+**Qué entrada lo recorre.** Pedir un turno que no existe, por ejemplo el turno 99, con el doble vacío (sin ningún turno cargado). Como no encuentra nada, el doble contesta `sql.ErrNoRows`, que es lo mismo que contesta Postgres cuando busca una fila que no está.
+
+**Qué decidí.** Agregar el test `TestObtenerTurno_QueNoExiste_DevuelveErrTurnoNoExiste`, en el PR [#24](https://github.com/canderojo/ingsoft3-tp01/pull/24). Lo agregué porque esa línea decide qué ve la paciente cuando entra a un turno que no existe: gracias a ella la app contesta "el turno no existe" (error 404). Si alguien la borrara, la app contestaría "error interno del servidor" (error 500), y antes ningún test lo hubiera detectado.
+
+### El umbral bloqueando un merge
+
+Para demostrar que el umbral frena de verdad hice dos PRs.
+
+**Primer PR: [#29](https://github.com/canderojo/ingsoft3-tp01/pull/29) (mergeado).**
+
+Agregué una funcionalidad nueva: un resumen de los turnos de la paciente, que dice cuál es su próximo turno, cuántos tiene activos y cuántos le falta confirmar.
+
+1. **Primer commit, sin tests.** Todo compilaba y todos los tests pasaban, pero los dos checks se pusieron en rojo porque la cobertura quedó abajo del umbral. Como los dos son required checks desde el TP4, GitHub no dejó mergear. 
+Se ve en los logs de la [corrida roja](https://github.com/canderojo/ingsoft3-tp01/actions/runs/36919025218).
+2. **Segundo commit, con los tests.** Escribí un test por cada caso que contempla el código nuevo, para que no quedara ningún camino sin probar.
+
+   En el backend, tres tests para `ResumenDeTurnos`:
+   - **Una paciente sin turnos:** el resumen no tiene próximo turno y marca 0 activos.
+   - **Una paciente con turnos de todo tipo:** le cargué cinco turnos. Tres no tienen que contar (uno cancelado, uno completado y uno pendiente que ya empezó) y dos sí (un confirmado de mañana y un pendiente de hoy a la tarde). El test comprueba que cuente sólo esos dos, que marque uno sin confirmar, que elija como próximo el de hoy porque es el más cercano, y que avise que tiene un turno hoy.
+   - **Una paciente sin turnos hoy:** su único turno es mañana, así que el resumen no tiene que avisar que tiene turno hoy.
+
+   En el frontend, un solo test con `it.each` para `textoResumenTurnos`, con un caso por cada mensaje que puede mostrar: sin turnos (lista vacía o sin lista), sólo turnos cancelados o completados, un turno activo, varios activos con uno sin confirmar, y varios sin confirmar. Así se prueban tanto los textos en singular como en plural.
+
+   Con esos tests la cobertura volvió a pasar el umbral, los dos checks se pusieron en verde y pude mergear.
+
+| | Umbral | Sin tests (rojo) | Con tests (verde) |
+|---|---|---|---|
+| Backend (sentencias) | 70 % | 65,3 % | 87,3 % |
+| Frontend (líneas) | 80 % | 71,05 % | 97,4 % |
+| Frontend (ramas) | 75 % | 40 % | 96 % |
+
+**Segundo PR: [#30](https://github.com/canderojo/ingsoft3-tp01/pull/30) (queda abierto hasta la defensa).**
+
+Agrega validaciones de DNI y email para el formulario de reserva, sin tests. Compila y los tests pasan, pero `build-frontend` está en rojo: la cobertura cae a 71,15 % de líneas y 55,81 % de ramas, abajo de los umbrales de 80 % y 75 %. `build-backend` queda en verde, pero alcanza con que uno de los dos esté en rojo para que no se pueda mergear.
+
+Lo hice sólo en el frontend porque el backend, después del PR #29, quedó en 87,3 %. Para bajarlo del 70 % hubiera tenido que agregar unas 30 líneas de código sin tests, y en el frontend alcanzaba con un archivo chico. 
+Este PR no lo arreglo: queda así, en rojo, para mostrar en la defensa que el freno funciona.
+
+### Problemas encontrados y cómo los resolví
+
+- **Bug de zona horaria.** Los turnos de la tarde del día aparecían todos tachados. La app guarda los horarios con la hora de Argentina pero etiquetada como UTC, y el backend los comparaba con `time.Now()` del contenedor, que es la hora UTC real, 3 horas adelantada. Lo arreglé pasándole al servicio un reloj en hora de Argentina (`service.AhoraEnArgentina`, con UTC-3 fijo) desde `main.go`. Gracias al reloj inyectado no tuve que tocar ninguna regla.
+- **La cobertura del backend no daba igual en mi máquina y en el pipeline.** Con el mismo código y los mismos tests, en local daba 82,4 % y en el contenedor 78,6 %. La diferencia es la versión de Go: tengo instalada la 1.27 y el Dockerfile usa la 1.25, y las dos cuentan distinto las sentencias de `HorariosDisponibles` y `CrearTurno`. Tomé como válido el número del pipeline, porque es donde mide el gate y la 1.25 es la versión del proyecto, y recalculé el umbral con esos números.
+- **Un test del front dependía de mi `.env`.** El test del mock comparaba la URL con `"/turnos"`, pero en mi máquina el `.env` tenía `VITE_API_URL=http://localhost:8080`, así que fallaba en local y en el pipeline no. Cambié el assert para que sólo compruebe que la URL termina en `/turnos`, y saqué la variable del `.env` y del `.env.example`, porque ya no se usaba (el proxy de Vite hace ese trabajo)
+
+### Declaración de uso de IA
+
+Usé Claude en el chat para entender la teoría de la guía (AAA, stubs y mocks, cobertura de línea y de rama, quality gates), para adaptar cada paso a Go y a mi app, y para escribir los tests, que me mostró y explicó antes de aplicarlos. También la use para redactar esta sección.
