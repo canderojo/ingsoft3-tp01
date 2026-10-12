@@ -1,0 +1,30 @@
+server {
+    listen 80;
+
+    location / {
+        root /usr/share/nginx/html;
+        index index.html;
+        try_files $uri $uri/ /index.html;
+    }
+
+    # La dirección del backend y el DNS llegan por variables de entorno:
+    # en compose, el nombre del servicio y el DNS de Docker; en Render,
+    # la URL de la API de ese entorno y un DNS público.
+    resolver ${DNS_RESOLVER} valid=10s ipv6=off;
+    set $backend_api ${BACKEND_URL};
+
+    location /profesionales {
+        proxy_pass $backend_api;
+        proxy_ssl_server_name on;
+    }
+
+    location /turnos {
+        proxy_pass $backend_api;
+        proxy_ssl_server_name on;
+    }
+
+    location /health {
+        proxy_pass $backend_api;
+        proxy_ssl_server_name on;
+    }
+}
