@@ -1,5 +1,13 @@
 # Decisiones
 
+## Enlaces de este TP (TP6)
+
+- [Corrida de un PR](https://github.com/canderojo/ingsoft3-tp01/actions/runs/38297699730/job/114972683928?pr=33): los tests en verde y "Entrar al registry" salteado.
+- [Corrida de main](https://github.com/canderojo/ingsoft3-tp01/actions/runs/38298297081/job/114974664060): "Construir y publicar la imagen" es el último paso.
+- Commit del merge etiquetado en el registry: `5014b8c0f84c2512e36f33f9f5c012af72edb6c7`.
+- QA: [front](https://turnero-front-qa-j4zw.onrender.com) y [API](https://turnero-api-qa-y8o0.onrender.com).
+- PROD: [front](https://turnero-front-prod-pvlk.onrender.com) y [API](https://turnero-api-prod-zwky.onrender.com).
+
 ## 1. Por qué Git no pudo resolver el conflicto automáticamente
 
 Git no pudo resolver el conflicto automáticamente porque las ramas `feature/titulo-a` y `feature/titulo-b` modificaron el mismo contenido del archivo de maneras diferentes. Git no podía determinar por sí solo cuál de las dos versiones era la correcta.
