@@ -47,7 +47,7 @@ export default function Footer() {
           </span>
           <div>
             <p className="footer-brand-nombre">Centro de Salud de la Mujer</p>
-            <p className="footer-brand-tagline">Turnos online, sin vueltas.</p>
+            <p className="footer-brand-tagline">Tu turno, a un clic.</p>
           </div>
         </div>
 
