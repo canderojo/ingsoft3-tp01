@@ -109,7 +109,7 @@ export default function ProfesionalDetailPage() {
   if (errorProfesional) {
     return (
       <div className="page">
-        <div className="alert alert-error">{errorProfesional}</div>
+        <div className="alert alert-error" role="alert">{errorProfesional}</div>
         <Link to="/">Volver a profesionales</Link>
       </div>
     );
@@ -153,7 +153,7 @@ export default function ProfesionalDetailPage() {
         </div>
 
         {loadingHorarios && <div className="spinner" />}
-        {errorHorarios && <div className="alert alert-error">{errorHorarios}</div>}
+        {errorHorarios && <div className="alert alert-error" role="alert">{errorHorarios}</div>}
 
         {!loadingHorarios && !errorHorarios && grillaDelDia.length === 0 && (
           <p className="muted">Este profesional no atiende ese día.</p>
@@ -226,7 +226,7 @@ export default function ProfesionalDetailPage() {
             />
           </div>
 
-          {errorReserva && <div className="alert alert-error">{errorReserva}</div>}
+          {errorReserva && <div className="alert alert-error" role="alert">{errorReserva}</div>}
 
           <button type="submit" className="btn btn-primary" disabled={enviando}>
             {enviando ? "Reservando..." : "Confirmar reserva"}

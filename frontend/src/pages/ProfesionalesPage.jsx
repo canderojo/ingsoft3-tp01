@@ -58,7 +58,7 @@ export default function ProfesionalesPage() {
 
       <div className="page">
         {loading && <div className="spinner" />}
-        {error && <div className="alert alert-error">{error}</div>}
+        {error && <div className="alert alert-error" role="alert">{error}</div>}
 
         {!loading && !error && profesionales.length === 0 && (
           <div className="empty-state">

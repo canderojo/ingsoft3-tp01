@@ -57,7 +57,7 @@ export default function TurnoDetailPage() {
   if (error) {
     return (
       <div className="page">
-        <div className="alert alert-error">{error}</div>
+        <div className="alert alert-error" role="alert">{error}</div>
         <Link to="/mis-turnos">Volver a mis turnos</Link>
       </div>
     );
@@ -109,7 +109,7 @@ export default function TurnoDetailPage() {
           <p className="turno-detail-value">{formatPrecio(turno.precio)}</p>
         </div>
 
-        {errorEstado && <div className="alert alert-error">{errorEstado}</div>}
+        {errorEstado && <div className="alert alert-error" role="alert">{errorEstado}</div>}
 
         {transiciones.length > 0 && (
           <div className="turno-detail-acciones">

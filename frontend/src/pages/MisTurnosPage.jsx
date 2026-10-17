@@ -59,6 +59,7 @@ export default function MisTurnosPage() {
           <input
             type={modo === "email" ? "email" : "text"}
             placeholder={modo === "dni" ? "Tu DNI" : "Tu email"}
+            aria-label="Dato para buscar tus turnos"
             value={valor}
             onChange={(e) => setValor(e.target.value)}
             required
@@ -69,7 +70,7 @@ export default function MisTurnosPage() {
         </div>
       </form>
 
-      {error && <div className="alert alert-error">{error}</div>}
+      {error && <div className="alert alert-error" role="alert">{error}</div>}
 
       {turnos && turnos.length === 0 && (
         <div className="empty-state">
