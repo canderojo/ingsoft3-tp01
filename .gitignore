@@ -24,3 +24,7 @@ Thumbs.db
 .vite/
 backend/coverage.html
 frontend/coverage/
+
+# --- Playwright: reportes y trazas de cada corrida ---
+playwright-report/
+test-results/
