@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { listarTurnosDePaciente } from "../api/turnos";
+import { listarTurnosDePaciente, ESTADOS } from "../api/turnos";
 import { ApiError } from "../api/client";
 import { formatFechaHora, formatPrecio } from "../utils/format";
 import EstadoBadge from "../components/EstadoBadge";
@@ -59,6 +59,7 @@ export default function MisTurnosPage() {
           <input
             type={modo === "email" ? "email" : "text"}
             placeholder={modo === "dni" ? "Tu DNI" : "Tu email"}
+            aria-label="Dato para buscar tus turnos"
             value={valor}
             onChange={(e) => setValor(e.target.value)}
             required
@@ -69,7 +70,7 @@ export default function MisTurnosPage() {
         </div>
       </form>
 
-      {error && <div className="alert alert-error">{error}</div>}
+      {error && <div className="alert alert-error" role="alert">{error}</div>}
 
       {turnos && turnos.length === 0 && (
         <div className="empty-state">
@@ -80,15 +81,25 @@ export default function MisTurnosPage() {
 
       {turnos && turnos.length > 0 && (
         <div className="turnos-list">
-          {turnos.map((t) => (
-            <Link to={`/turnos/${t.id}`} key={t.id} className="turno-item card">
-              <div>
-                <p className="turno-item-fecha">{formatFechaHora(t.fecha_hora_inicio)}</p>
-                <p className="muted">{formatPrecio(t.precio)}</p>
-              </div>
-              <EstadoBadge estado={t.estado} />
-            </Link>
-          ))}
+          {turnos.map((t) => {
+            const fecha = formatFechaHora(t.fecha_hora_inicio);
+            // Mismo texto que muestra EstadoBadge.
+            const estado = ESTADOS[t.estado] ?? t.estado;
+            return (
+              <Link
+                to={`/turnos/${t.id}`}
+                key={t.id}
+                className="turno-item card"
+                aria-label={`Turno #${t.id}, ${fecha}, ${estado}`}
+              >
+                <div>
+                  <p className="turno-item-fecha">{fecha}</p>
+                  <p className="muted">{formatPrecio(t.precio)}</p>
+                </div>
+                <EstadoBadge estado={t.estado} />
+              </Link>
+            );
+          })}
         </div>
       )}
     </div>
