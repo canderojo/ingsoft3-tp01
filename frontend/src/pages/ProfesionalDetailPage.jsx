@@ -67,15 +67,27 @@ export default function ProfesionalDetailPage() {
   }, [id]);
 
   useEffect(() => {
+    // Si la fecha cambia antes de que llegue la respuesta, esa respuesta ya
+    // es vieja: se descarta para que no pise los horarios de la fecha nueva.
+    let cancelado = false;
     setSlotSeleccionado(null);
     setLoadingHorarios(true);
     setErrorHorarios(null);
     horariosDisponibles(id, fecha)
-      .then(setHorarios)
-      .catch((err) =>
-        setErrorHorarios(err instanceof ApiError ? err.message : "No pudimos cargar los horarios.")
-      )
-      .finally(() => setLoadingHorarios(false));
+      .then((resultado) => {
+        if (!cancelado) setHorarios(resultado);
+      })
+      .catch((err) => {
+        if (!cancelado) {
+          setErrorHorarios(err instanceof ApiError ? err.message : "No pudimos cargar los horarios.");
+        }
+      })
+      .finally(() => {
+        if (!cancelado) setLoadingHorarios(false);
+      });
+    return () => {
+      cancelado = true;
+    };
   }, [id, fecha]);
 
   async function handleReservar(e) {
@@ -148,7 +160,10 @@ export default function ProfesionalDetailPage() {
             type="date"
             min={hoyISO()}
             value={fecha}
-            onChange={(e) => setFecha(e.target.value)}
+            onChange={(e) => {
+              setErrorReserva(null);
+              setFecha(e.target.value);
+            }}
           />
         </div>
 
@@ -170,7 +185,10 @@ export default function ProfesionalDetailPage() {
                 className={`slot-btn${slotSeleccionado === iso ? " selected" : ""}${
                   disponible ? "" : " slot-btn-ocupado"
                 }`}
-                onClick={() => setSlotSeleccionado(iso)}
+                onClick={() => {
+                  setErrorReserva(null);
+                  setSlotSeleccionado(iso);
+                }}
               >
                 {formatHoraSlot(iso)}
               </button>
@@ -226,13 +244,15 @@ export default function ProfesionalDetailPage() {
             />
           </div>
 
-          {errorReserva && <div className="alert alert-error" role="alert">{errorReserva}</div>}
-
           <button type="submit" className="btn btn-primary" disabled={enviando}>
             {enviando ? "Reservando..." : "Confirmar reserva"}
           </button>
         </form>
       )}
+
+      {/* Fuera del form: si la API rechaza la reserva, el catch deselecciona el
+          horario y el form se desmonta, pero el aviso tiene que seguir visible. */}
+      {errorReserva && <div className="alert alert-error" role="alert">{errorReserva}</div>}
     </div>
   );
 }
