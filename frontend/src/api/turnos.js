@@ -28,7 +28,8 @@ export const TRANSICIONES_PERMITIDAS = {
 
 export function crearTurno(datos) {
   if (MOCK) return mockCrearTurno(datos);
-  return post("/turnos", datos);
+  const { nombre, ...resto } = datos;
+  return post("/turnos", { ...resto, nombre_completo: nombre });
 }
 
 export function obtenerTurno(id) {
