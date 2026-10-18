@@ -1,7 +1,8 @@
 import { expect } from '@playwright/test'
 
-// Todas las rutas son relativas al baseURL del front: nginx (o el proxy de
-// Vite) reenvía /profesionales y /turnos a la API.
+// Por defecto las rutas son relativas al baseURL del front: nginx (o el
+// proxy de Vite) reenvía /profesionales y /turnos a la API. Con `base` se
+// le pega directo a la API (por ejemplo 'http://localhost:8080').
 
 let contador = 0
 
@@ -31,8 +32,8 @@ function fechaEnDias(dias) {
 
 // Primer horario libre del primer profesional, buscando desde mañana hasta
 // dentro de 14 días. Si no hay ninguno, el test falla: no se saltea.
-export async function buscarHorarioLibre(request) {
-  const resProfesionales = await request.get('/profesionales')
+export async function buscarHorarioLibre(request, base = '') {
+  const resProfesionales = await request.get(`${base}/profesionales`)
   await expect(resProfesionales).toBeOK()
   const profesionales = await resProfesionales.json()
   if (profesionales.length === 0) {
@@ -42,7 +43,7 @@ export async function buscarHorarioLibre(request) {
 
   for (let dias = 1; dias <= 14; dias++) {
     const fecha = fechaEnDias(dias)
-    const res = await request.get(`/profesionales/${profesional.id}/horarios-disponibles?fecha=${fecha}`)
+    const res = await request.get(`${base}/profesionales/${profesional.id}/horarios-disponibles?fecha=${fecha}`)
     await expect(res).toBeOK()
     const horarios = await res.json()
     if (horarios.length > 0) {
@@ -58,14 +59,14 @@ export async function buscarHorarioLibre(request) {
 // Red de seguridad: cancela los turnos de ese DNI que todavía se pueden
 // cancelar. Solo pendiente y confirmado admiten pasar a cancelado; un
 // completado devolvería 422 "transición de estado no permitida".
-export async function cancelarTurnosDe(request, dni) {
+export async function cancelarTurnosDe(request, dni, base = '') {
   if (!dni) return
-  const res = await request.get(`/turnos?dni=${dni}`)
+  const res = await request.get(`${base}/turnos?dni=${dni}`)
   await expect(res).toBeOK()
   const turnos = await res.json()
   for (const turno of turnos) {
     if (turno.estado !== 'pendiente' && turno.estado !== 'confirmado') continue
-    const resCancelar = await request.patch(`/turnos/${turno.id}/estado`, {
+    const resCancelar = await request.patch(`${base}/turnos/${turno.id}/estado`, {
       data: { estado: 'cancelado' },
     })
     await expect(resCancelar).toBeOK()

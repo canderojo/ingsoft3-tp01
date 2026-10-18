@@ -14,6 +14,10 @@ export default defineConfig({
   // Un solo reintento: absorbe un cold start lento sin tapar un fallo real.
   retries: 1,
 
+  // De a un spec por vez: los dos comparten el mismo horario en una base
+  // compartida y, corriendo en paralelo, se pisarían entre sí.
+  workers: 1,
+
   // El reporte HTML se genera siempre (sin abrirse solo) y 'list' muestra
   // el avance en la consola.
   reporter: [['html', { open: 'never' }], ['list']],
