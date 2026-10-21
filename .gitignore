@@ -28,3 +28,9 @@ frontend/coverage/
 # --- Playwright: reportes y trazas de cada corrida ---
 playwright-report/
 test-results/
+
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+*.tfvars
