@@ -22,6 +22,9 @@ resource "neon_project" "preprod" {
   # Sin esta línea el primer apply falla: el provider pide 86400 s por defecto
   # y el tope del plan gratuito es 21600.
   history_retention_seconds = 21600
+
+  # La región se fija para que el entorno no cambie entre un apply y otro.
+  region_id = "aws-us-east-2"
 }
 
 resource "neon_role" "preprod" {
