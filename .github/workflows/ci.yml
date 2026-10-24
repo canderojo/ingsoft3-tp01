@@ -58,7 +58,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Publicar el reporte de cobertura
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: ${{ !cancelled() }}
         with:
           name: coverage-report-backend
@@ -133,7 +133,7 @@ jobs:
           " >> $GITHUB_STEP_SUMMARY
 
       - name: Publicar el coverage del frontend
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: ${{ !cancelled() }}
         with:
           name: coverage-report-frontend
@@ -222,7 +222,7 @@ jobs:
         run: npx playwright test e2e/api.spec.js
 
       - name: Publicar el reporte de integración
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: ${{ !cancelled() }}   # también cuando las pruebas fallaron
         with:
           name: playwright-report-integracion
@@ -259,7 +259,7 @@ jobs:
         run: npx playwright test e2e/turnos.spec.js
 
       - name: Publicar el reporte e2e
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: ${{ !cancelled() }}   # también cuando las pruebas fallaron
         with:
           name: playwright-report-e2e
