@@ -12,6 +12,8 @@ type Config struct {
 	Port        string
 	DatabaseURL string
 	FrontendURL string
+	// Sentry: si SentryDSN queda vacía, Sentry se apaga y la app anda igual.
+	SentryDSN string
 }
 
 // Load arma un Config leyendo variables de entorno, con valores por
@@ -23,6 +25,8 @@ func Load() Config {
 		// Origen permitido para CORS: el dev server de Vite usa el
 		// puerto 5173 por defecto.
 		FrontendURL: getEnv("FRONTEND_URL", "http://localhost:5173"),
+		// Sin valor por defecto: el DSN nunca se escribe en el código.
+		SentryDSN: getEnv("SENTRY_DSN", ""),
 	}
 }
 

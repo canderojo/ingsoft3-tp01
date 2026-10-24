@@ -3,7 +3,10 @@ package main
 import (
 	"log"
 	"net/http"
+	"time"
 
+	"github.com/getsentry/sentry-go"
+	sentryhttp "github.com/getsentry/sentry-go/http"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
@@ -27,6 +30,30 @@ func main() {
 
 	cfg := config.Load()
 
+	// Sentry recibe los errores (panics) y mide cuánto tarda cada pedido.
+	// Con SENTRY_DSN vacía el SDK queda apagado: no manda nada y la app
+	// funciona igual.
+	if err := sentry.Init(sentry.ClientOptions{
+		Dsn:              cfg.SentryDSN,
+		EnableTracing:    true,
+		TracesSampleRate: 1.0, // medir todos los pedidos
+		// Centro de salud: nada de datos personales de pacientes en Sentry.
+		DataCollection: &sentry.DataCollection{
+			UserInfo:   sentry.Set(false),   // ni IP ni usuario
+			HTTPBodies: []sentry.BodyType{}, // nunca cuerpos (el alta de turno trae DNI y email)
+			Cookies:    &sentry.KeyValueCollectionBehavior{Mode: sentry.CollectionOff},
+			// GET /turnos?dni=...&email=... lleva datos del paciente en el query string.
+			QueryParams: &sentry.KeyValueCollectionBehavior{Mode: sentry.CollectionOff},
+			// Render agrega headers con la IP del cliente (X-Forwarded-For, True-Client-IP).
+			HTTPHeaders: &sentry.HeaderCollectionConfig{
+				Request:  &sentry.KeyValueCollectionBehavior{Terms: headersConIP},
+				Response: &sentry.KeyValueCollectionBehavior{Terms: headersConIP},
+			},
+		},
+	}); err != nil {
+		log.Printf("Advertencia: no se pudo iniciar Sentry (%v)", err)
+	}
+
 	database, err := db.Connect(cfg.DatabaseURL)
 	if err != nil {
 		log.Printf("Advertencia: no se pudo conectar a la base de datos (%v)", err)
@@ -47,6 +74,13 @@ func main() {
 		AllowedHeaders: []string{"Content-Type"},
 	}))
 
+	// Sentry va después de CORS (los preflight OPTIONS no generan
+	// transacciones) y antes de las rutas. Repanic: después de reportar el
+	// panic lo vuelve a lanzar, para que lo siga manejando quien esté afuera.
+	// Cada transacción sale con el patrón de chi (GET /turnos/{id}): chi
+	// completa r.Pattern al rutear y sentryhttp lo usa como nombre.
+	router.Use(sentryhttp.New(sentryhttp.Options{Repanic: true}).Handle)
+
 	healthHandler := handlers.HealthHandler{DB: database}
 	router.Get("/health", healthHandler.Health)
 	router.Head("/health", healthHandler.Health) // los monitores externos (UptimeRobot) preguntan con HEAD
@@ -66,8 +100,19 @@ func main() {
 	router.Get("/turnos/{id}", turnosHandler.Obtener)
 	router.Patch("/turnos/{id}/estado", turnosHandler.CambiarEstado)
 
+	// TEMPORAL (TP9): falla a propósito para comprobar que el error llega a
+	// Sentry. Sacarlo una vez verificado.
+	router.Get("/falla", func(w http.ResponseWriter, r *http.Request) {
+		panic("Falla de prueba del TP9")
+	})
+
 	log.Printf("Servidor escuchando en http://localhost:%s", cfg.Port)
 	if err := http.ListenAndServe(":"+cfg.Port, router); err != nil {
+		sentry.Flush(2 * time.Second) // log.Fatal sale con os.Exit, sin esperar a Sentry
 		log.Fatal(err)
 	}
 }
+
+// headersConIP son partes de nombres de headers que llevan la IP del
+// cliente; Sentry reemplaza su valor por "[Filtered]".
+var headersConIP = []string{"forwarded", "-ip", "remote-", "via", "-user"}
