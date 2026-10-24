@@ -1,0 +1,16 @@
+version: 2
+updates:
+  - package-ecosystem: "gomod"          # dependencias del backend (Go)
+    directory: "/backend"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "npm"            # dependencias del frontend
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "github-actions" # las actions de los workflows
+    directory: "/"
+    schedule:
+      interval: "weekly"
