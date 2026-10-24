@@ -49,6 +49,7 @@ func main() {
 
 	healthHandler := handlers.HealthHandler{DB: database}
 	router.Get("/health", healthHandler.Health)
+	router.Head("/health", healthHandler.Health) // los monitores externos (UptimeRobot) preguntan con HEAD
 
 	// El servicio de turnos recibe la base (envuelta en repository.Postgres)
 	// y el reloj de Argentina. En los tests se reemplazan ambos por dobles.
