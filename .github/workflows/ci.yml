@@ -158,6 +158,7 @@ jobs:
 
   deploy-qa:
     runs-on: ubuntu-latest
+    permissions: {}
     needs: [build-backend, build-frontend]   # sin CI verde no hay deploy
     if: github.ref == 'refs/heads/main'      # los PRs verifican; solo main despliega
     environment: qa
@@ -194,6 +195,8 @@ jobs:
 
   integracion:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     needs: deploy-qa                         # contra QA ya desplegado y vivo
     timeout-minutes: 15
     steps:
@@ -228,6 +231,8 @@ jobs:
 
   e2e:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     needs: integracion                       # la UI solo si la API ya pasó
     timeout-minutes: 20
     steps:
@@ -263,6 +268,7 @@ jobs:
 
   deploy-prod:
     runs-on: ubuntu-latest
+    permissions: {}
     needs: e2e                               # PROD solo después de QA verificado por integración y e2e
     environment: production                  # acá el workflow se pausa hasta la aprobación
     concurrency:
