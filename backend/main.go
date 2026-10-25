@@ -100,12 +100,6 @@ func main() {
 	router.Get("/turnos/{id}", turnosHandler.Obtener)
 	router.Patch("/turnos/{id}/estado", turnosHandler.CambiarEstado)
 
-	// TEMPORAL (TP9): falla a propósito para comprobar que el error llega a
-	// Sentry. Sacarlo una vez verificado.
-	router.Get("/falla", func(w http.ResponseWriter, r *http.Request) {
-		panic("Falla de prueba del TP9")
-	})
-
 	log.Printf("Servidor escuchando en http://localhost:%s", cfg.Port)
 	if err := http.ListenAndServe(":"+cfg.Port, router); err != nil {
 		sentry.Flush(2 * time.Second) // log.Fatal sale con os.Exit, sin esperar a Sentry
