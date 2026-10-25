@@ -527,9 +527,8 @@ En QA quedan turnos cancelados y pacientes de prueba, porque no se pueden borrar
 - **Los tests e2e fallaban en la reserva**: el reporte me mostró que los botones de horario se ven como `2:50pm` y que mi selector pedía `HH:MM`, y además esperaba un horario de hoy, que de noche no existe. Dejé un selector que acepta las distintas formas de mostrar la hora, y como el front ahora descarta las respuestas viejas de horarios, esa espera ya no hace falta.
 - **Faltaba nombre accesible en el front**: el campo de búsqueda de Mis turnos no tenía y los avisos de error no tenían `role="alert"`. Los agregué para que las pruebas encuentren los controles como los encontraría una persona.
 - **Una respuesta tardía podía pisar la grilla de horarios**: si cambiaba la fecha mientras llegaba la respuesta de la anterior, la vieja pisaba a la nueva. Lo arreglé con una bandera de cancelación en el efecto.
-- **El aviso de una reserva rechazada desaparecía con el formulario**: ahora queda fuera del formulario y se sigue viendo. No arreglé el pedido de refresco que hace el `catch` al rechazar una reserva, que no tiene la bandera: solo podría pisar la grilla si cambio la fecha en los milisegundos que dura ese pedido.
+- **El aviso de una reserva rechazada desaparecía con el formulario**: ahora queda fuera del formulario y se sigue viendo. 
 - **Vitest levantaba los specs de Playwright**: por defecto toma todos los `*.spec.js` y habría puesto en rojo `build-frontend`, así que le excluí la carpeta `e2e/`. Y puse `workers: 1` porque las dos suites usan el mismo primer horario libre y, en paralelo, se pisarían.
-- **`npm audit` marca `source-map-js` con severidad alta**: es una dependencia indirecta de Vite y del reporte de cobertura de Vitest, no de Playwright. No corrí `npm audit fix` en este PR porque puede cambiar versiones y reescribir el lockfile; queda para un PR aparte. El lint también tiene avisos de `setState` dentro de un efecto en dos páginas que no toqué, y no los cambié porque implicaría tocar la lógica de carga.
 
 ### Declaración de uso de IA
 
@@ -581,3 +580,26 @@ No metí preprod en el pipeline (extensión opcional de la guía), por dos motiv
 ### Declaración de uso de IA
 
 Usé Claude para entender la teoría de la guía (infraestructura como código, estado, plan, drift), para adaptar cada paso a mi app en Go y para redactar esta sección.
+
+## TP9 — DevSecOps y observabilidad
+
+### Dependabot
+
+Dejé Dependabot activo en los tres ecosistemas de la app (gomod en /backend, npm en /frontend y github-actions), con revisión semanal, y prendí las alertas y las actualizaciones de seguridad en Settings → Advanced Security. Me abrió 10 PRs y mergeé el #55, que actualiza react-router-dom de 7.18.2 a 7.18.4. Es un patch: según el changelog sólo actualiza su dependencia interna (react-router), sin cambios que rompan nada, y toca sólo package.json y package-lock.json del front. Dependabot le puso 82 % de compatibilidad, pero eso es una estadística de otros proyectos; lo que me dio confianza fue mi propio pipeline, que pasó en verde sobre ese PR (tests, cobertura, integración y e2e). Los demás los dejé abiertos. En particular no mergeé los de actions/checkout, setup-node y upload-artifact (de la versión 6 a la 7), porque son saltos de versión mayor que pueden afectar mis workflows y prefiero revisarlos con calma.
+
+### Monitor y Sentry
+
+Puse un monitor externo en UptimeRobot sobre el /health de producción, cada 5 minutos. Para la caída provocada suspendí turnero-api-prod en Render a las 7:09 y el aviso de DOWN llegó a las 7:12, o sea que lo detectó en 3 minutos; como el monitor chequea cada 5, el aviso puede tardar entre casi 0 y 5 minutos. Reanudé el servicio a las 7:13 y el aviso de UP llegó a las 7:16. Sin el monitor me habría enterado por un usuario o de casualidad. Al terminar pausé el monitor, porque despierto todo el mes consume la cuota de horas de Render.
+
+Integré Sentry en el back (sentry-go, con el DSN en la variable de entorno SENTRY_DSN, así que no está en el repo y, si falta, Sentry queda apagado y la app anda igual) y en el front (@sentry/react, con el DSN en el código, que no es un secreto porque sólo sirve para enviar datos). Como la app maneja DNI y emails de pacientes y GET /turnos los lleva en el query string, configuré Sentry en los dos lados para que no mande query string; en el back tampoco manda cuerpos de pedidos. En Sentry generé un error de producción ("Falla de prueba del TP9") provocado con un endpoint temporal que después saqué. Con mi uso real, la operación más usada es GET /profesionales/{id}/horarios-disponibles (0,150 pedidos por minuto), y la más lenta es GET /profesionales, con un P95 de unos 667 ms contra un P50 de unos 4,6 ms. Es una muestra chica, hecha con pocos pedidos de prueba, así que el P95 puede venir de uno o dos pedidos lentos. Mi hipótesis es que son los primeros después de que la base o el servicio gratuito se durmieron, pero no la comprobé porque no instrumenté las consultas a la base. Con ese dato abrí la tarjeta #59 en mi tablero. 
+
+### Problemas encontrados y como los resolví
+
+- El /health devolvía 405 a los pedidos HEAD, que son los que usa UptimeRobot, así que registré el mismo handler también para HEAD. 
+- CCodeQL marcó 4 veces que a los jobs de ci.yml les faltaba declarar permissions: hoy no era explotable porque los permisos por defecto del repo son de sólo lectura, pero dependía de una opción de Settings, así que declaré permissions mínimos por job: contents: read en integración y e2e, y ninguno en los dos deploys, que sólo llaman a los deploy hooks de Render. 
+- Puse el endpoint /falla en el mismo PR que Sentry, cuando la guía lo agrega después; salió igual a producción y lo saqué en un PR aparte. 
+- Sentry no recibía el error de producción porque cargué SENTRY_DSN en Render después del último deploy y el servicio no la tomaba; lo resolví volviendo a desplegar por el pipeline.
+
+### Declaración de uso de IA
+
+Usé Claude para entender la teoría de la guía, para adaptar cada paso a mi app en Go, para poder solucionar los problemas encontrados y para redactar esta sección.
